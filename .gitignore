@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Logs
+*.log
+
+# Environment Variables
+.env
+
+# Python
+.pytest_cache/
+
+# Coverage
+.coverage
