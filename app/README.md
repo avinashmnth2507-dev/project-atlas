@@ -65,3 +65,52 @@ The pytest suite uses Flask's test client and does not start a web server. It co
 - **Port 5000 is busy:** stop the other local development server before starting this one.
 
 No cloud credentials or paid services are needed for the backend workflow.
+
+## Build and run the local Docker image
+
+From the repository root, build the commit-specific local image and start only the Atlas API:
+
+```bash
+docker compose -f compose.yaml build api
+docker compose -f compose.yaml up --detach api
+docker compose -f compose.yaml ps
+```
+
+The image tag is `project-atlas-api:0.1.0-atlas003-6461902`. Compose binds `127.0.0.1:5055` on the host to port `5000` in the container. The image uses the official Python 3.14.8 slim Bookworm base pinned to its image digest, installs only production requirements, and copies the application into `/opt/atlas`. It starts Gunicorn with one synchronous worker, disables Gunicorn's optional control socket, runs as UID/GID `10001`, and has a Python standard-library health check for `/health`.
+
+The Compose service limits the container to one CPU and 256 MiB, makes the root filesystem read-only, drops Linux capabilities, disables privilege escalation, and provides a small writable `/tmp`. Its logs are size-limited. No registry, cloud service, database, or other container is required.
+
+Flask's built-in server (`python run.py`) is for local development. The container uses Gunicorn, a production WSGI server, to serve the same Flask application factory.
+
+### Check routes and logs
+
+```bash
+curl --fail http://127.0.0.1:5055/
+curl --fail http://127.0.0.1:5055/health
+curl --fail http://127.0.0.1:5055/info
+curl --fail http://127.0.0.1:5055/version
+docker compose -f compose.yaml logs --follow api
+```
+
+The test suite remains a separate host-side check:
+
+```bash
+cd app
+.venv-atlas002/bin/python -m pytest -q
+```
+
+### Stop and clean up Atlas resources
+
+Stop and remove only the container and network created by this Compose project:
+
+```bash
+docker compose -f compose.yaml down
+```
+
+If you also want to remove the Atlas image, remove only its exact tag:
+
+```bash
+docker image rm project-atlas-api:0.1.0-atlas003-6461902
+```
+
+Do not use broad prune commands for this project; they can remove images, containers, or volumes belonging to other projects. The Compose file creates no named volumes.

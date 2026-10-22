@@ -66,9 +66,9 @@ tests/
 
 ## 📈 Project Status
 
-The backend foundation is implemented as a small Flask application with an application factory and four GET endpoints: `/`, `/health`, `/info`, and `/version`.
+The backend foundation is implemented as a small Flask application with an application factory and four GET endpoints: `/`, `/health`, `/info`, and `/version`. A local Docker image runs the API with Gunicorn as a non-root user and binds to loopback by default; see [app/README.md](app/README.md) for build, run, test, and cleanup instructions.
 
-The Docker, Kubernetes, Terraform, CI/CD, monitoring, logging, and security components are planned, but are not implemented yet.
+Kubernetes, Terraform, CI/CD, monitoring, logging, and broader security components remain planned and are not implemented yet.
 
 ---
 
