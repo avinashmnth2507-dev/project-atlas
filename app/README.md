@@ -17,7 +17,7 @@ source .venv-atlas002/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
 
-The `requirements-dev.txt` file includes the runtime requirements and pytest. The environment directory is ignored by Git. The older `.venv/` may reference a Python installation that is no longer present; leave it untouched and use the separate environment above.
+The `requirements-dev.txt` file includes the runtime requirements, pytest, and the Ruff version used by CI. The environment directory is ignored by Git. The older `.venv/` may reference a Python installation that is no longer present; leave it untouched and use the separate environment above.
 
 ## Start the API
 
@@ -66,17 +66,44 @@ The pytest suite uses Flask's test client and does not start a web server. It co
 
 No cloud credentials or paid services are needed for the backend workflow.
 
+## GitHub Actions CI
+
+The `CI` workflow in `.github/workflows/ci.yml` runs on pushes to `main`, pull requests targeting `main`, and manual dispatch. It uses a GitHub-hosted Ubuntu runner with Python 3.14 and read-only repository permissions. Outdated runs for the same branch or pull request are cancelled.
+
+The single job installs `requirements-dev.txt` (which also installs the runtime requirements), compiles the Python sources, runs Ruff's E4/E7/E9/F rules, executes pytest, and checks dependency consistency with `pip check`. It then scans the checked-out source snapshot with the free Gitleaks CLI, builds the existing Dockerfile into a runner-local `linux/amd64` image, and scans that image with Trivy for OS and Python library vulnerabilities. The image is not pushed to a registry. The workflow needs no AWS credentials, application secrets, paid services, or user-created token.
+
+The workflow pins `actions/checkout` v7.0.1, `actions/setup-python` v7.0.0, and `aquasecurity/trivy-action` v0.36.0 to immutable commit SHAs. It uses Ruff 0.17.1, Gitleaks 8.30.1 (verified against the official Linux x64 release checksum), and Trivy CLI 0.76.1. The Trivy action caches its CLI and vulnerability database; Python dependencies are not cached.
+
+The Dockerfile pins the official `python:3.14.9-slim-trixie` linux/amd64 manifest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. This is an architecture-specific digest. The CI build explicitly targets `linux/amd64`; a different architecture needs its own verified manifest digest and compatibility check.
+
+The Trivy policy reports every HIGH and CRITICAL result in the Actions step log and the run summary. It fails only when at least one CRITICAL finding is present. `ignore-unfixed` remains false and no vulnerability ignore or suppression list is configured. HIGH findings are temporarily non-blocking because the controlled 2026-10-22 comparison with the tested base reported 48 HIGH findings after the base-image change; making HIGH blocking immediately would prevent the first CI run before that baseline can be triaged. The findings remain visible for remediation and are not treated as accepted or harmless. Tighten the policy by making any HIGH finding fail once the HIGH baseline has been reduced and reviewed.
+
+The controlled comparison used local Trivy 0.71.1 and the same cached vulnerability database, refreshed 2026-10-22 07:10 UTC, for both images. The original image had 65 HIGH and 3 CRITICAL findings; the tested candidate had 48 HIGH and 0 CRITICAL findings. Candidate HIGH IDs included `CVE-2025-69720`, `CVE-2026-16742`, `CVE-2026-54369`, `CVE-2026-76642`, `CVE-2026-78408`, `CVE-2026-78409`, `CVE-2026-78410`, `CVE-2026-9538`, `GHSA-6v7p-g79w-8964`, `CVE-2025-47273`, `CVE-2026-97687`, and `CVE-2026-97689`. Trivy listed no fixed versions for the remaining Debian findings. It warned that third-party SBOM data can be inaccurate: the experiment confirmed msgpack and urllib3 within pip's vendored files, while its setuptools SBOM record was not found in the final image filesystem. These findings remain visible in CI. Zero CRITICAL findings does not mean the image is vulnerability-free; HIGH findings remain, and the CI Trivy 0.76.1 database can produce counts different from the local Trivy 0.71.1 snapshot.
+
+View results in the repository's **Actions** tab and open the `CI` run for step-level logs. A local test or lint success is useful feedback, but it does not establish that a GitHub-hosted workflow run passed; report CI as verified only after an actual run appears in Actions.
+
+### Investigate a failed CI step
+
+- **Python compilation or tests:** from `app/`, run `./.venv-atlas002/bin/python -m compileall -q src tests run.py` and `./.venv-atlas002/bin/python -m pytest -q`; inspect the failing file and assertion in the job log.
+- **Ruff:** from `app/`, run `./.venv-atlas002/bin/python -m ruff check --select E4,E7,E9,F src tests run.py`. Correct the reported code issue and rerun the check.
+- **Dependency consistency:** from `app/`, run `./.venv-atlas002/bin/python -m pip check`; compare the conflicting package versions with `requirements.txt` and `requirements-dev.txt`.
+- **Docker build:** from the repository root, run `docker build --platform linux/amd64 --tag atlas-api:ci --file Dockerfile .` and inspect the first failing build step.
+- **Gitleaks:** review the redacted finding and remove the exposed value from the checked-out files. Revoke or rotate a real credential; do not paste it into logs or an issue. This scan checks the checked-out source snapshot, not the full Git history.
+- **Trivy:** inspect the CVE/GHSA, package, installed version, fixed version, and whether the package is part of the image. Update the application dependency or pinned base image as appropriate. The workflow has no finding suppressions or ignore entries; Trivy's database changes over time, so findings can change between runs. A zero-CRITICAL result does not establish that the image is vulnerability-free.
+
+After the first successful GitHub-hosted run, a useful evidence screenshot would be `screenshots/05-github-actions/18-ci-run-success.png`, showing the CI run summary and completed job. Capture it from the real Actions page; no screenshot or workflow result is included by this change.
+
 ## Build and run the local Docker image
 
 From the repository root, build the commit-specific local image and start only the Atlas API:
 
 ```bash
-docker compose -f compose.yaml build api
+docker build --platform linux/amd64 --tag project-atlas-api:0.1.0-atlas003-6461902 --file Dockerfile .
 docker compose -f compose.yaml up --detach api
 docker compose -f compose.yaml ps
 ```
 
-The image tag is `project-atlas-api:0.1.0-atlas003-6461902`. Compose binds `127.0.0.1:5055` on the host to port `5000` in the container. The image uses the official Python 3.14.8 slim Bookworm base pinned to its image digest, installs only production requirements, and copies the application into `/opt/atlas`. It starts Gunicorn with one synchronous worker, disables Gunicorn's optional control socket, runs as UID/GID `10001`, and has a Python standard-library health check for `/health`.
+The currently running ATLAS-003 container uses image tag `project-atlas-api:0.1.0-atlas003-6461902`; this CI change does not rebuild or restart it. New Dockerfile builds use the official Python 3.14.9 slim Trixie linux/amd64 manifest pinned to digest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. The digest is amd64-specific, so local Compose builds must target `linux/amd64`; use a separately verified manifest for another architecture. The image installs only production requirements and copies the application into `/opt/atlas`. It starts Gunicorn with one synchronous worker, disables Gunicorn's optional control socket, runs as UID/GID `10001`, and has a Python standard-library health check for `/health`.
 
 The Compose service limits the container to one CPU and 256 MiB, makes the root filesystem read-only, drops Linux capabilities, disables privilege escalation, and provides a small writable `/tmp`. Its logs are size-limited. No registry, cloud service, database, or other container is required.
 

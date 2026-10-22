@@ -1,4 +1,4 @@
-FROM python:3.14.8-slim-bookworm@sha256:44e000a07b48bef1517a2b14adc93c17af728ca98858b5e24c6e1b18de1b2ef2
+FROM python:3.14.9-slim-trixie@sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5
 
 ENV FLASK_ENV=production \
     PYTHONDONTWRITEBYTECODE=1 \
