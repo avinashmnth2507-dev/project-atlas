@@ -4,6 +4,8 @@ Health check endpoint.
 
 from flask import Blueprint, jsonify
 
+from atlas.config import Config
+
 health_bp = Blueprint("health", __name__)
 
 
@@ -16,6 +18,6 @@ def health():
         {
             "status": "healthy",
             "application": "Project Atlas",
-            "version": "0.1.0",
+            "version": Config.VERSION,
         }
     )

@@ -3,6 +3,13 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+app/.venv-atlas002/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.tox/
 
 # macOS
 .DS_Store
@@ -26,3 +33,5 @@ venv/
 
 # Coverage
 .coverage
+.coverage.*
+htmlcov/
