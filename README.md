@@ -66,7 +66,7 @@ tests/
 
 ## 📈 Project Status
 
-The backend foundation is implemented as a small Flask application with an application factory and four GET endpoints: `/`, `/health`, `/info`, and `/version`. A local Docker image runs the API with Gunicorn as a non-root user and binds to loopback by default. GitHub Actions CI is configured to validate the Python API and build and scan the image without publishing it. See [app/README.md](app/README.md) for local commands and pipeline details.
+The backend foundation is implemented as a small Flask application with an application factory and four GET endpoints: `/`, `/health`, `/info`, and `/version`. A local Docker image runs the API with Gunicorn as a non-root user and binds to loopback by default. GitHub Actions validates and scans the image; successful pushes to `main` publish its full-commit-SHA tag to GHCR after the security gate passes. See [app/README.md](app/README.md) for local commands and pipeline details.
 
 Kubernetes, Terraform, deployment automation, monitoring, logging, and broader security components remain planned and are not implemented yet.
 

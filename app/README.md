@@ -64,21 +64,49 @@ The pytest suite uses Flask's test client and does not start a web server. It co
 - **The old `.venv/bin/python` cannot start:** it was created from a Python installation that is no longer available. This guide uses a separate environment so the existing directory is preserved.
 - **Port 5000 is busy:** stop the other local development server before starting this one.
 
-No cloud credentials or paid services are needed for the backend workflow.
+Local application development and tests need no cloud credentials or registry access. The main-branch CI publication uses GitHub's built-in workflow token, not a user-created credential.
 
 ## GitHub Actions CI
 
-The `CI` workflow in `.github/workflows/ci.yml` runs on pushes to `main`, pull requests targeting `main`, and manual dispatch. It uses a GitHub-hosted Ubuntu runner with Python 3.14 and read-only repository permissions. Outdated runs for the same branch or pull request are cancelled.
+The `CI` workflow in `.github/workflows/ci.yml` runs on pushes to `main`, pull requests targeting `main`, and manual dispatch. It uses a GitHub-hosted Ubuntu runner with Python 3.14 and read-only permissions for validation. Outdated runs for the same branch or pull request are cancelled.
 
-The single job installs `requirements-dev.txt` (which also installs the runtime requirements), compiles the Python sources, runs Ruff's E4/E7/E9/F rules, executes pytest, and checks dependency consistency with `pip check`. It then scans the checked-out source snapshot with the free Gitleaks CLI, builds the existing Dockerfile into a runner-local `linux/amd64` image, and scans that image with Trivy for OS and Python library vulnerabilities. The image is not pushed to a registry. The workflow needs no AWS credentials, application secrets, paid services, or user-created token.
+The validation job installs `requirements-dev.txt` (which also installs the runtime requirements), compiles the Python sources, runs Ruff's E4/E7/E9/F rules, executes pytest, and checks dependency consistency with `pip check`. It then scans the checked-out source snapshot with the free Gitleaks CLI, builds the existing Dockerfile into a runner-local `linux/amd64` image, and scans that image with Trivy for OS and Python library vulnerabilities. On a push to `main`, it hands the already-scanned image to a separate publishing job only after every check and the CRITICAL gate pass. Pull requests and manual runs validate and scan but do not publish. The workflow needs no AWS credentials, application secrets, or user-created token; it uses the repository's GitHub Actions and Packages configuration.
 
-The workflow pins `actions/checkout` v7.0.1, `actions/setup-python` v7.0.0, and `aquasecurity/trivy-action` v0.36.0 to immutable commit SHAs. It uses Ruff 0.17.1, Gitleaks 8.30.1 (verified against the official Linux x64 release checksum), and Trivy CLI 0.76.1. The Trivy action caches its CLI and vulnerability database; Python dependencies are not cached.
+The workflow pins `actions/checkout` v7.0.1, `actions/setup-python` v7.0.0, `aquasecurity/trivy-action` v0.36.0, `docker/setup-buildx-action` v4.4.1, `docker/build-push-action` v7.4.0, `docker/login-action` v4.6.0, `actions/upload-artifact` v7.0.2, and `actions/download-artifact` v8.0.2 to full commit SHAs. It uses Ruff 0.17.1, Gitleaks 8.30.1 (verified against the official Linux x64 release checksum), and Trivy CLI 0.76.1. The Trivy action caches its CLI and vulnerability database; Python dependencies are not cached.
 
 The Dockerfile pins the official `python:3.14.9-slim-trixie` linux/amd64 manifest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. This is an architecture-specific digest. The CI build explicitly targets `linux/amd64`; a different architecture needs its own verified manifest digest and compatibility check.
 
 The Trivy policy reports every HIGH and CRITICAL result in the Actions step log and the run summary. It fails only when at least one CRITICAL finding is present. `ignore-unfixed` remains false and no vulnerability ignore or suppression list is configured. HIGH findings are temporarily non-blocking because the controlled 2026-10-22 comparison with the tested base reported 48 HIGH findings after the base-image change; making HIGH blocking immediately would prevent the first CI run before that baseline can be triaged. The findings remain visible for remediation and are not treated as accepted or harmless. Tighten the policy by making any HIGH finding fail once the HIGH baseline has been reduced and reviewed.
 
 The controlled comparison used local Trivy 0.71.1 and the same cached vulnerability database, refreshed 2026-10-22 07:10 UTC, for both images. The original image had 65 HIGH and 3 CRITICAL findings; the tested candidate had 48 HIGH and 0 CRITICAL findings. Candidate HIGH IDs included `CVE-2025-69720`, `CVE-2026-16742`, `CVE-2026-54369`, `CVE-2026-76642`, `CVE-2026-78408`, `CVE-2026-78409`, `CVE-2026-78410`, `CVE-2026-9538`, `GHSA-6v7p-g79w-8964`, `CVE-2025-47273`, `CVE-2026-97687`, and `CVE-2026-97689`. Trivy listed no fixed versions for the remaining Debian findings. It warned that third-party SBOM data can be inaccurate: the experiment confirmed msgpack and urllib3 within pip's vendored files, while its setuptools SBOM record was not found in the final image filesystem. These findings remain visible in CI. Zero CRITICAL findings does not mean the image is vulnerability-free; HIGH findings remain, and the CI Trivy 0.76.1 database can produce counts different from the local Trivy 0.71.1 snapshot.
+
+### GHCR image publication
+
+Successful pushes to `main` publish `ghcr.io/avinashmnth2507-dev/project-atlas:sha-<full-commit-sha>`, for example `sha-ccef0756d94bd707f2b44481bb6fdfd10eed9a4f`. The repository name is lowercase. No `main` or `latest` convenience tag is published. The full-SHA tag identifies the source commit; GHCR tags can still be moved by another push, so use the manifest digest for strict image pinning.
+
+The validation job builds the `linux/amd64` image once with Buildx, loads it locally, and scans it with Trivy. If all validation steps and the CRITICAL gate succeed on a push to `main`, the workflow saves that scanned image to a one-day GitHub Actions artifact. A dependent publish job downloads and loads the same image archive, then pushes its SHA tag. Pull requests and manual dispatches do not upload the image artifact or publish to GHCR. A failed check, failed Trivy gate, or failed artifact transfer prevents the publish job from running. The image remains subject to the documented HIGH findings; they are visible and non-blocking, not suppressed.
+
+Only the publish job receives `packages: write`. It logs in to `ghcr.io` with `github.actor` and GitHub's built-in `GITHUB_TOKEN`; the validation job retains `contents: read`. The token value is not passed as a build argument, stored in the image, or printed in logs. The image archive contains the image only and is retained for one day to hand off the scanned build without rebuilding it.
+
+After a successful publish, replace the tag placeholder with the full commit SHA, then inspect the tag and its registry manifest digest:
+
+```bash
+IMAGE=ghcr.io/avinashmnth2507-dev/project-atlas
+TAG='sha-<full-commit-sha>'
+docker buildx imagetools inspect "$IMAGE:$TAG"
+```
+
+Copy the `Digest` value from the output, replace the digest placeholder, then pull by digest:
+
+```bash
+IMAGE=ghcr.io/avinashmnth2507-dev/project-atlas
+DIGEST='sha256:<manifest-digest>'
+docker pull "$IMAGE@$DIGEST"
+```
+
+The push step also prints the published digest in its Actions log. To verify a publication, open the account's **Packages** list, select `project-atlas`, and confirm the `sha-<full-commit-sha>` version, linked repository, and digest. Public GHCR packages can be pulled anonymously; private packages require an authorized login. A newly published package is private by default. Review visibility and package access manually in GitHub under the package's **Package settings**; making a package public is a manual choice, and GitHub does not allow changing it back to private. See GitHub's [package visibility and access documentation](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility). Publishing from this repository's workflow with `GITHUB_TOKEN` associates the package with this repository. Before first publish, verify that repository and organization Actions policy permits the publish job's `packages: write` token permission. If a package already exists, check its **Manage Actions access** settings to ensure this repository's workflow can publish. See GitHub's [GITHUB_TOKEN package workflow guidance](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions).
+
+After an actual successful publish, capture genuine evidence at `screenshots/06-ghcr/19-ghcr-image-published.png`, showing the package version and successful workflow run. Do not create this screenshot before a real image publication is visible.
 
 View results in the repository's **Actions** tab and open the `CI` run for step-level logs. A local test or lint success is useful feedback, but it does not establish that a GitHub-hosted workflow run passed; report CI as verified only after an actual run appears in Actions.
 
