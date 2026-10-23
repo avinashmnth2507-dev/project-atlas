@@ -385,6 +385,8 @@ currently running service.
 - [Kubernetes manifests and historical smoke-test notes](kubernetes/README.md)
 - [Helm chart values and ownership prerequisites](helm/atlas/README.md)
 - [Architecture chapters and milestone roadmap](docs/architecture/07-roadmap.md)
+- [Contributing guidelines](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## License
 
