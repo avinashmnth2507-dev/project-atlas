@@ -14,12 +14,15 @@ The [tracked screenshot](../screenshots/07-kubernetes/20-kubernetes-local-smoke-
 is historical evidence; this guide does not assert that the profile is running
 now.
 
-The tested image and the current manifest image are from the earlier GHCR
-release below. They predate the later `/metrics` and structured JSON logging
-changes in the current application source. The smoke-test screenshot does not
-validate those later features in Kubernetes. Publish and review a current image
-digest, update this manifest and the Helm default, then repeat the test before
-making that claim.
+The historical smoke test used the earlier image
+`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b`,
+published from source commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32`,
+before the `/metrics` and structured JSON logging changes. The committed
+Kustomize and Helm defaults now
+pin the verified image for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`; the screenshot does not validate
+that newer image in Kubernetes. Repeat the smoke test against the current pin
+before making that claim.
 
 ## Resources
 
@@ -42,15 +45,15 @@ slow-starting process too aggressively.
 The Deployment pins the published image by manifest digest:
 
 ```text
-ghcr.io/avinashmnth2507-dev/project-atlas@sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b
+ghcr.io/avinashmnth2507-dev/project-atlas@sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa
 ```
 
-This digest was reported by the successful GHCR push for source tag
-`sha-d66b09be89258e0898ef559fc5c7b8e71b5ece32`. CI builds `linux/amd64`, which
+This digest was verified for the successful GHCR image tag
+`sha-989de965f9ea04f1f4292fa6c819aeb49daa8f31`. CI builds `linux/amd64`, which
 is the platform built by CI. The Deployment reference does not use `latest` or
 any mutable tag. Updating the image requires reviewing and changing the digest
 deliberately; this manifest does not rebuild or publish images. Digest pinning
-provides repeatability, not freshness; this is not the current app source.
+provides repeatability, not proof that the image is deployed to a cluster.
 
 Before deployment, verify the package's visibility in GitHub Packages and that
 the cluster can reach `ghcr.io`. A public package needs no pull secret. If the
@@ -81,9 +84,9 @@ is not full Kubernetes API-server schema validation or a deployment smoke test.
 
 The historical test used an already-created, dedicated `atlas-smoke` profile;
 it did not modify the default Minikube profile. Do not assume that profile
-still exists or is running. Before repeating the test, update the image digest
-to the current reviewed release in the chosen deployment definition and confirm
-the cluster state, resources, and namespace ownership.
+still exists or is running. The committed Kustomize and Helm image pins now
+target the verified release. Before repeating the test, confirm the cluster
+state, resources, and namespace ownership.
 
 For a running profile, use the explicit context throughout:
 
@@ -124,8 +127,8 @@ mount flags equivalent to Compose's `noexec,nosuid`; cluster-level policy is
 needed for those controls. Compose's loopback port mapping is replaced by an
 internal Service; use a local port-forward for host access. Container log
 rotation remains a cluster logging/runtime concern. The current Kustomize
-image predates application-level Prometheus metrics and JSON request logs; the
-Kubernetes resources do not deploy a scraper or log collector.
+image includes application-level Prometheus metrics and JSON request logs, but
+the Kubernetes resources do not deploy a scraper or log collector.
 
 ## Evidence
 

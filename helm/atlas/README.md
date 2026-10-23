@@ -28,7 +28,7 @@ namespace.
 | --- | --- | --- |
 | `replicaCount` | `1` | API replicas |
 | `image.repository` | `ghcr.io/avinashmnth2507-dev/project-atlas` | GHCR image repository |
-| `image.digest` | `sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b` | Reviewed immutable image digest |
+| `image.digest` | `sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa` | Reviewed immutable image digest |
 | `resources.requests.cpu` | `100m` | Requested CPU |
 | `resources.requests.memory` | `96Mi` | Requested memory |
 | `resources.limits.cpu` | `1` | CPU limit |
@@ -40,11 +40,11 @@ the digest requires deliberate review. The chart contains no registry
 credentials. If GHCR access requires a pull secret, manage it through an
 approved process outside this chart and repository.
 
-The default digest is the earlier GHCR image published from source commit
-`d66b09be89258e0898ef559fc5c7b8e71b5ece32`. It predates the current
-application's Prometheus endpoint and structured request logging. The chart
-has not been updated to a newer image release; publish and review a current
-digest before using Helm to validate those features.
+The default digest is the verified GHCR image published for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`, which includes the current
+application's Prometheus endpoint and structured request logging. The
+historical Kustomize smoke test used an earlier image; this chart has only been
+validated offline and has not deployed the current digest to a cluster.
 
 ## Security posture
 

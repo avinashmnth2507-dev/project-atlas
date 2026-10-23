@@ -40,12 +40,12 @@ historical screenshots. The local Kubernetes smoke test was completed against
 Minikube Kubernetes `v1.35.1` on the dedicated `atlas-smoke` profile. The
 repository does not establish whether that profile is running now.
 
-The current Kustomize and Helm defaults still pin
-`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b`,
-published from source commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32`.
-That image predates the later metrics and structured-logging changes. A new
-image digest must be published and deliberately reviewed into both deployment
-definitions before they represent the current application source. The Helm
+The Kustomize and Helm defaults now pin the verified immutable image
+`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa`,
+published for source commit `989de965f9ea04f1f4292fa6c819aeb49daa8f31`.
+The historical Minikube smoke test used an earlier image from commit
+`d66b09be89258e0898ef559fc5c7b8e71b5ece32`; it does not validate the newly
+pinned image or its metrics and structured logging in Kubernetes. The Helm
 chart has been rendered and linted offline; it has not been installed into a
 cluster.
 
@@ -64,8 +64,10 @@ established in those files.
 ## Architecture at a glance
 
 The diagram shows configured runtime paths, not a claim that a container or
-cluster is running now. The Minikube lane is historical and uses the older
-image noted above.
+cluster is running now. The Minikube lane is historical and uses the earlier
+image from commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32`; the committed
+Kustomize and Helm defaults now pin the verified image from commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`.
 
 ```mermaid
 flowchart LR
@@ -165,9 +167,10 @@ readiness, and liveness probes, requests of `100m` CPU and `96Mi`, and limits
 of `1` CPU and `256Mi`. It runs non-root, disables service-account token
 automount, uses RuntimeDefault seccomp, drops all capabilities, has a
 read-only root filesystem, and mounts a memory-backed `/tmp` capped at `16Mi`.
-The current image digest in these definitions is older than the current app
-source, as noted above. See the [Kubernetes guide](kubernetes/README.md) and
-[Helm chart guide](helm/atlas/README.md).
+Both definitions now pin the verified image for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`. This pin does not establish that
+the image is deployed to a running cluster. See the
+[Kubernetes guide](kubernetes/README.md) and [Helm chart guide](helm/atlas/README.md).
 
 Terraform currently has only version constraints, the AWS provider, and an
 `aws_region` variable defaulting to `ap-southeast-2`. There are no resource,
@@ -221,9 +224,10 @@ helm lint --strict --namespace atlas ./helm/atlas
 helm template atlas ./helm/atlas --namespace atlas --kube-version 1.35.1
 ```
 
-They render local files and do not install or deploy a workload. Before using
-either deployment path for the current source, publish and review a new image
-digest, update the chosen manifest, and follow its ownership rules.
+They render local files and do not install or deploy a workload. The committed
+Kustomize and Helm defaults pin the verified image for the current source;
+repeat the Kubernetes smoke test against that pin before claiming current
+cluster behavior. Follow the deployment ownership rules when choosing a path.
 
 ## Evidence and documentation
 

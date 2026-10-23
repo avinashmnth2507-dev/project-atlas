@@ -54,10 +54,12 @@ inferred from the portfolio goal or from local-only configuration.
 | Metrics and request logs | Implemented in current application source and covered by tests |
 | Live monitoring and log aggregation | Absent |
 
-The Kubernetes definitions still pin an older GHCR digest from source commit
-`d66b09be89258e0898ef559fc5c7b8e71b5ece32`; that image predates metrics and
-structured request logging. Deployment definitions need a reviewed digest
-update before they represent the current application.
+The Kubernetes definitions now pin the verified GHCR image for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`. The historical local smoke test
+used the earlier image from commit
+`d66b09be89258e0898ef559fc5c7b8e71b5ece32`, before metrics and structured
+request logging, so a new cluster smoke test is needed to validate those
+features at runtime.
 
 ## History and evidence
 

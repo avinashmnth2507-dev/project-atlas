@@ -49,13 +49,14 @@ The evidence file is
 This is historical evidence; it does not establish the cluster's current
 state.
 
-The manifest currently pins
-`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b`,
-the image published under source tag
-`sha-d66b09be89258e0898ef559fc5c7b8e71b5ece32`. That image predates the metrics
-and JSON logging code. The historical smoke test therefore does not validate
-those newer features in Kubernetes. A fresh image digest and deployment test
-are required.
+The manifest and chart now pin
+`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa`,
+verified for source tag
+`sha-989de965f9ea04f1f4292fa6c819aeb49daa8f31`. The historical smoke test
+used the earlier image from source tag
+`sha-d66b09be89258e0898ef559fc5c7b8e71b5ece32`, before metrics and JSON
+logging. Repeat the smoke test against the current pin before claiming these
+features have been validated in Kubernetes.
 
 The Kustomize `Namespace` is managed by the manifest. Do not assume deleting
 or replacing the application also deletes the namespace; review its full
@@ -81,9 +82,10 @@ The GitHub Actions workflow builds and scans the image, then on successful
 `main` pushes transfers that same image through a short-lived artifact to a
 publish job. The publish job pushes the full-commit-SHA tag to GHCR. Kubernetes
 manifests pin a separate digest rather than consuming a mutable tag. Updating
-that digest is a manual reviewed step. The committed pin currently lags the
-source features; publishing a newer tag does not automatically update either
-deployment definition.
+that digest is a manual reviewed step. The committed pin now references the
+verified image for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`; publishing a later tag will not
+automatically update either deployment definition.
 
 The workflow builds the application image for `linux/amd64`. The Dockerfile's
 immutable Python base-image digest is a separate setting; the repository does

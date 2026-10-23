@@ -30,9 +30,11 @@ flowchart TB
 ```
 
 The Compose path can build the current checkout. The Kubernetes path above is
-historical: its committed Kustomize and Helm definitions pin a GHCR image from
-before metrics and JSON request logging were added. It must not be read as a
-deployment of current application source.
+historical: the recorded smoke test used an earlier GHCR image from source
+commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32`. The committed Kustomize and
+Helm definitions now pin the verified image from source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`, but no deployment of that pin is
+recorded.
 
 ## Request and observability behavior
 
@@ -122,8 +124,9 @@ limiting, persistent storage, a database, horizontal scaling, high
 availability, metrics scraping, dashboards, alerts, or centralized logs. The
 single-worker metrics registry is not configured for multiple workers. The
 production 500 event sacrifices traceback detail to avoid writing exception
-contents to general logs. The Kubernetes image digest is stale relative to
-current source. These constraints should be resolved deliberately before
+contents to general logs. The historical Kubernetes smoke test predates the
+current image pin, so the observability behavior still needs a live Kubernetes
+smoke test. These constraints should be resolved deliberately before
 claiming production readiness.
 
 Reasonable extensions are a fresh image release and Kubernetes smoke test,

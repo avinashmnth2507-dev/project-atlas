@@ -26,11 +26,12 @@ Kubernetes, Terraform, Helm, and observability commits.
 
 ## Current risks and unfinished work
 
-1. **Kubernetes image is stale.** Kustomize and Helm pin digest
-   `sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b`,
-   published from source commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32`.
-   It predates metrics and request logging. Publish a current image, update the
-   selected deployment manifest, and rerun the smoke test before claiming those
+1. **Kubernetes runtime validation is historical.** Kustomize and Helm now pin
+   the verified image for source commit
+   `989de965f9ea04f1f4292fa6c819aeb49daa8f31`, but the recorded smoke test used
+   the earlier image from commit
+   `d66b09be89258e0898ef559fc5c7b8e71b5ece32`, before metrics and request
+   logging. Repeat the smoke test against the current pin before claiming those
    features in Kubernetes.
 2. **HIGH vulnerabilities remain.** The CI workflow reports them without
    blocking; a 2026-10-22 local scan is historical and not a current result.
@@ -51,9 +52,8 @@ Kubernetes, Terraform, Helm, and observability commits.
 
 ## Recommended next milestones
 
-1. Build and publish an image containing current source, verify the GHCR
-   manifest digest, update the chosen Kubernetes definition, and repeat the
-   isolated `atlas-smoke` test. Keep Kustomize and Helm ownership separate.
+1. Deploy the currently pinned image and repeat the isolated `atlas-smoke`
+   test. Keep Kustomize and Helm ownership separate.
 2. Design a restricted metrics scrape path and log collection/retention
    policy. Add a collector only after access, privacy, storage, and operational
    ownership are settled.

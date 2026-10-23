@@ -54,8 +54,10 @@ aspiration, not the actual tracked stack.
 
 CI builds the application image for `linux/amd64`, while the Dockerfile pins
 the Python base image by digest. These are separate configuration choices.
-The Kubernetes and Helm image reference is also immutable, but it is an older
-release from before metrics and structured logs. Digest pinning ensures
-repeatability, not freshness. Review and update the image digest in both
-deployment alternatives after publishing a current image. The repository does
-not document validation for other build targets.
+The Kubernetes and Helm image reference is also immutable and now pins the
+verified release for source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`. Digest pinning ensures
+repeatability, not that the image has been deployed. The historical Kubernetes
+smoke test used the earlier release and does not validate metrics or structured
+logs in a cluster. The repository does not document validation for other
+build targets.

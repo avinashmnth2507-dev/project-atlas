@@ -98,8 +98,11 @@ helm template atlas ./helm/atlas --namespace atlas --kube-version 1.35.1
 These are not live cluster checks. The local Kustomize smoke test was completed
 historically with explicit context `atlas-smoke`; its screenshot is
 [here](../../screenshots/07-kubernetes/20-kubernetes-local-smoke-test.png).
-The test used the earlier pinned GHCR image. The current image digest must be
-refreshed before using these definitions to validate metrics or JSON logging.
+The test used the earlier GHCR image from source commit
+`d66b09be89258e0898ef559fc5c7b8e71b5ece32`. The current definitions now pin
+the verified image from source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`; repeat the smoke test before
+claiming Kubernetes runtime validation of metrics or JSON logging.
 
 Kustomize and Helm are mutually exclusive owners of the same Deployment and
 Service. Kustomize includes the `atlas` Namespace and its restricted PSA label;

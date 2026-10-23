@@ -44,8 +44,10 @@ document.
 
 Evidence screenshots record particular earlier steps. They do not establish
 the current status of GitHub Actions, GHCR, Docker, Minikube, or a deployed
-cluster. In particular, the Kubernetes and Helm manifests pin an image that
-predates the current metrics and JSON logging code.
+cluster. The Kubernetes and Helm manifests now pin the verified image for
+source commit `989de965f9ea04f1f4292fa6c819aeb49daa8f31`; the historical
+Kubernetes screenshot records an earlier image and does not prove deployment
+of this pin.
 
 The tracked root files `CHANGELOG.md`, `CONTRIBUTING.md`,
 `CODE_OF_CONDUCT.md`, and `LICENSE` are empty placeholders and therefore are

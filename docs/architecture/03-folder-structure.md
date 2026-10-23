@@ -87,7 +87,8 @@ workspace-only files.
 - `.github/workflows/ci.yml` defines validation, source/image scanning, and
   conditional GHCR publishing.
 - `kubernetes/` contains Kustomize input and a Namespace, Deployment, and
-  Service. The Deployment pins an older published image digest.
+  Service. The Deployment pins the verified GHCR image for source commit
+  `989de965f9ea04f1f4292fa6c819aeb49daa8f31`.
 - `helm/atlas/` contains the alternative Helm chart for the Deployment and
   Service. It does not create the Namespace.
 - `terraform/` contains only Terraform/provider constraints, AWS provider

@@ -12,13 +12,13 @@ does not use a database, persistent volume, user authentication, cloud SDK, or
 AWS resource. The API has four application routes and a Prometheus exposition
 route. Local deployment and CI are implemented; AWS provisioning is not.
 
-The current application source includes Prometheus client instrumentation and
-JSON request logging. The Kustomize and Helm manifests still reference an older
-GHCR image digest published from source commit
-`d66b09be89258e0898ef559fc5c7b8e71b5ece32`; that image predates `/metrics` and
-the structured request logs. A new image must be built, scanned, published,
-and deliberately pinned before those later application features are available
-in either Kubernetes definition.
+The current Kustomize and Helm defaults pin the verified GHCR image
+`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa`,
+published for source commit `989de965f9ea04f1f4292fa6c819aeb49daa8f31`.
+The historical Minikube smoke test used an earlier image from commit
+`d66b09be89258e0898ef559fc5c7b8e71b5ece32`, before `/metrics` and structured
+request logging. Updating the pins does not establish a deployment of the new
+image to a cluster.
 
 ## Current application architecture
 
@@ -152,14 +152,15 @@ token automount; runs non-root with UID/GID/fsGroup `10001`; uses
 filesystem read-only; drops all capabilities; and provides a memory-backed
 `/tmp` capped at `16Mi`.
 
-The current manifest and chart digest is
-`sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b`,
-published from source tag `sha-d66b09be89258e0898ef559fc5c7b8e71b5ece32`.
-It is stale relative to the current API source. The historical local smoke test
+The current manifest and chart pin
+`ghcr.io/avinashmnth2507-dev/project-atlas@sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa`,
+verified for source tag `sha-989de965f9ea04f1f4292fa6c819aeb49daa8f31`.
+The historical local smoke test
 used Minikube profile `atlas-smoke`, Kubernetes `v1.35.1`, `2` CPUs and
-`2048MiB`; its screenshot records the four API endpoints. It does not establish
-the state of the cluster now, the latest image deployment, a cloud deployment,
-or a Helm installation. See `kubernetes/README.md` and `helm/atlas/README.md`.
+`2048MiB`; its screenshot records the four API endpoints. It used the earlier
+image from source commit `d66b09be89258e0898ef559fc5c7b8e71b5ece32` and does not
+establish that the currently pinned image is deployed or that the cluster is
+currently running. See `kubernetes/README.md` and `helm/atlas/README.md`.
 
 `kubectl kustomize ./kubernetes`, `helm lint`, and `helm template` are local
 render/lint operations. They do not establish API-server admission, scheduling,
@@ -188,8 +189,9 @@ configure credentials. There is no remote state design or cost estimate.
 - The service has no persistent storage, HA, autoscaling, TLS termination,
   secret management, database, public ingress, or deployed monitoring/logging
   backend.
-- The committed Kubernetes image digest must be refreshed before those
-  manifests represent the current observability-enabled source.
+- The historical Kubernetes smoke test predates the observability-enabled
+  image now pinned by the manifests; repeat it before claiming those features
+  have been validated in a Kubernetes runtime.
 
 ## Evidence and future extensions
 
@@ -198,8 +200,8 @@ Tracked evidence includes the [CI run](screenshots/05-github-actions/18-ci-run-s
 [local Kubernetes smoke test](screenshots/07-kubernetes/20-kubernetes-local-smoke-test.png).
 The latter is historical evidence for the earlier pinned image.
 
-Possible next steps are to publish and pin the current application image,
-re-run Kubernetes smoke validation against that digest, design a restricted
+Possible next steps are to re-run Kubernetes smoke validation against the
+current pinned digest, design a restricted
 Prometheus scrape path and log retention boundary, and only then define a
 costed AWS deployment and Terraform state strategy. These are proposals, not
 implemented services. See [the roadmap](docs/architecture/07-roadmap.md).

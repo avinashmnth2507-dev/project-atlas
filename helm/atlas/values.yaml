@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/avinashmnth2507-dev/project-atlas
-  digest: sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b
+  digest: sha256:32cec7ad8da3303f038b15ca2b6369f6c86ba28c7ed8d4709ae164df729af5fa
 
 resources:
   requests:

@@ -15,5 +15,6 @@ that Docker or a Kubernetes profile is currently running.
 The Minikube smoke-test evidence is historical. Check the explicit
 `atlas-smoke` profile and cluster context before using Kubernetes commands;
 do not assume the default profile or current profile state. The checked-in
-Kubernetes image digest predates the current metrics and structured-logging
-source.
+Kubernetes image pin now targets source commit
+`989de965f9ea04f1f4292fa6c819aeb49daa8f31`; the historical smoke test used an
+older image and does not validate the current pin in a cluster.
