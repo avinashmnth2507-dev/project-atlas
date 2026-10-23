@@ -18,15 +18,35 @@ dist/
 .vscode/
 
 # Terraform
+# Initialized working directories and provider caches.
 .terraform/
+
+# State and backups can contain sensitive values.
 *.tfstate
 *.tfstate.*
+
+# Local variable files may contain credentials or environment-specific values.
+*.tfvars
+*.tfvars.json
+
+# Terraform crash logs and local override configuration.
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Save local plans with the .tfplan suffix; plan files can expose values.
+*.tfplan
 
 # Logs
 *.log
 
-# Environment Variables
+# Local environment files may contain credentials; only a sanitized example is shareable.
 .env
+.env.*
+!.env.example
 
 # Python
 .pytest_cache/
