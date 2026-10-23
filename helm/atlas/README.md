@@ -40,6 +40,12 @@ the digest requires deliberate review. The chart contains no registry
 credentials. If GHCR access requires a pull secret, manage it through an
 approved process outside this chart and repository.
 
+The default digest is the earlier GHCR image published from source commit
+`d66b09be89258e0898ef559fc5c7b8e71b5ece32`. It predates the current
+application's Prometheus endpoint and structured request logging. The chart
+has not been updated to a newer image release; publish and review a current
+digest before using Helm to validate those features.
+
 ## Security posture
 
 The chart preserves the Kustomize baseline: restricted namespace PSA

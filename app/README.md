@@ -4,7 +4,7 @@ This directory contains the Flask API foundation for Project Atlas. Local develo
 
 ## Prerequisites
 
-- Python 3.14 or newer. The project is configured for Python 3.14; Python 3.14.8 was used for the ATLAS-002 local checks.
+- Python 3.14 or newer. The project and CI target Python 3.14.
 - `pip`, included with Python.
 
 ## Create a local environment
@@ -17,23 +17,33 @@ source .venv-atlas002/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
 
-The `requirements-dev.txt` file includes the runtime requirements, pytest, and the Ruff version used by CI. The environment directory is ignored by Git. The older `.venv/` may reference a Python installation that is no longer present; leave it untouched and use the separate environment above.
+The `requirements-dev.txt` file includes the runtime requirements, pytest, and the Ruff version used by CI. Virtual environments are ignored by Git and are not part of the application deliverable.
 
 ## Start the API
 
-With the environment active and the current directory set to `app/`:
+With the environment active and the current directory set to `app/`, start
+the Flask CLI development server on loopback:
 
 ```bash
-PYTHONPATH=src python run.py
+PYTHONPATH=src python -m flask --app atlas:create_app run --host 127.0.0.1 --port 5000
 ```
 
-The development server listens on port 5000. Visit `http://127.0.0.1:5000/`. To use production configuration for a local check, set `FLASK_ENV` before startup:
+Visit `http://127.0.0.1:5000/`. To check the production application
+configuration locally, set `FLASK_ENV` before startup:
 
 ```bash
-FLASK_ENV=production PYTHONPATH=src python run.py
+FLASK_ENV=production PYTHONPATH=src python -m flask --app atlas:create_app run --host 127.0.0.1 --port 5000
 ```
 
-The app defaults to the `development` environment. `DEBUG` is enabled only for `development` and disabled for `production`.
+The app defaults to the `development` environment. `DEBUG` is enabled only for
+`development` and disabled for `production`. The Flask CLI still runs the
+development server when `FLASK_ENV=production`; use Gunicorn for the container
+runtime.
+
+The separate `python run.py` entry point binds to `0.0.0.0:5000`. Direct
+execution can expose the development server to other devices on the local
+network, so use it only on a trusted network. The loopback-bound Flask CLI
+command above is the safer local quick-start.
 
 ## Endpoints
 
@@ -113,7 +123,7 @@ settings.
 
 - **`ModuleNotFoundError: atlas`:** run commands from `app/` and set `PYTHONPATH=src` for direct startup. Pytest reads this source path from `pyproject.toml`.
 - **`ModuleNotFoundError: flask` or `pytest`:** activate `.venv-atlas002` and run `python -m pip install -r requirements-dev.txt`.
-- **The old `.venv/bin/python` cannot start:** it was created from a Python installation that is no longer available. This guide uses a separate environment so the existing directory is preserved.
+- **The virtual environment uses a different Python version:** recreate the local environment with Python 3.14 and install `requirements-dev.txt` again.
 - **Port 5000 is busy:** stop the other local development server before starting this one.
 
 Local application development and tests need no cloud credentials or registry access. The main-branch CI publication uses GitHub's built-in workflow token, not a user-created credential.
@@ -126,7 +136,7 @@ The validation job installs `requirements-dev.txt` (which also installs the runt
 
 The workflow pins `actions/checkout` v7.0.1, `actions/setup-python` v7.0.0, `aquasecurity/trivy-action` v0.36.0, `docker/setup-buildx-action` v4.4.1, `docker/build-push-action` v7.4.0, `docker/login-action` v4.6.0, `actions/upload-artifact` v7.0.2, and `actions/download-artifact` v8.0.2 to full commit SHAs. It uses Ruff 0.17.1, Gitleaks 8.30.1 (verified against the official Linux x64 release checksum), and Trivy CLI 0.76.1. The Trivy action caches its CLI and vulnerability database; Python dependencies are not cached.
 
-The Dockerfile pins the official `python:3.14.9-slim-trixie` linux/amd64 manifest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. This is an architecture-specific digest. The CI build explicitly targets `linux/amd64`; a different architecture needs its own verified manifest digest and compatibility check.
+The Dockerfile pins the official `python:3.14.9-slim-trixie` base image by digest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. CI separately builds the application image for `linux/amd64`. The repository does not document validation for other build targets.
 
 The Trivy policy reports every HIGH and CRITICAL result in the Actions step log and the run summary. It fails only when at least one CRITICAL finding is present. `ignore-unfixed` remains false and no vulnerability ignore or suppression list is configured. HIGH findings are temporarily non-blocking because the controlled 2026-10-22 comparison with the tested base reported 48 HIGH findings after the base-image change; making HIGH blocking immediately would prevent the first CI run before that baseline can be triaged. The findings remain visible for remediation and are not treated as accepted or harmless. Tighten the policy by making any HIGH finding fail once the HIGH baseline has been reduced and reviewed.
 
@@ -158,7 +168,7 @@ docker pull "$IMAGE@$DIGEST"
 
 The push step also prints the published digest in its Actions log. To verify a publication, open the account's **Packages** list, select `project-atlas`, and confirm the `sha-<full-commit-sha>` version, linked repository, and digest. Public GHCR packages can be pulled anonymously; private packages require an authorized login. A newly published package is private by default. Review visibility and package access manually in GitHub under the package's **Package settings**; making a package public is a manual choice, and GitHub does not allow changing it back to private. See GitHub's [package visibility and access documentation](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility). Publishing from this repository's workflow with `GITHUB_TOKEN` associates the package with this repository. Before first publish, verify that repository and organization Actions policy permits the publish job's `packages: write` token permission. If a package already exists, check its **Manage Actions access** settings to ensure this repository's workflow can publish. See GitHub's [GITHUB_TOKEN package workflow guidance](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions).
 
-After an actual successful publish, capture genuine evidence at `screenshots/05-ghcr/19-ghcr-image-published.png`, showing the package version and successful workflow run. Do not create this screenshot before a real image publication is visible.
+The tracked screenshot [19-ghcr-image-published.png](../screenshots/05-ghcr/19-ghcr-image-published.png) records the initial successful publication. It is historical evidence and does not establish that the latest source commit has a published image.
 
 View results in the repository's **Actions** tab and open the `CI` run for step-level logs. A local test or lint success is useful feedback, but it does not establish that a GitHub-hosted workflow run passed; report CI as verified only after an actual run appears in Actions.
 
@@ -171,19 +181,19 @@ View results in the repository's **Actions** tab and open the `CI` run for step-
 - **Gitleaks:** review the redacted finding and remove the exposed value from the checked-out files. Revoke or rotate a real credential; do not paste it into logs or an issue. This scan checks the checked-out source snapshot, not the full Git history.
 - **Trivy:** inspect the CVE/GHSA, package, installed version, fixed version, and whether the package is part of the image. Update the application dependency or pinned base image as appropriate. The workflow has no finding suppressions or ignore entries; Trivy's database changes over time, so findings can change between runs. A zero-CRITICAL result does not establish that the image is vulnerability-free.
 
-After the first successful GitHub-hosted run, a useful evidence screenshot would be `screenshots/05-github-actions/18-ci-run-success.png`, showing the CI run summary and completed job. Capture it from the real Actions page; no screenshot or workflow result is included by this change.
+The tracked screenshot [18-ci-run-success.png](../screenshots/05-github-actions/18-ci-run-success.png) records an earlier successful GitHub-hosted CI run. Local validation does not establish the result of a later workflow run; check the Actions page for the commit being reviewed.
 
 ## Build and run the local Docker image
 
-From the repository root, build the commit-specific local image and start only the Atlas API:
+From the repository root, build the current checkout and start only the Atlas API:
 
 ```bash
-docker build --platform linux/amd64 --tag project-atlas-api:0.1.0-atlas003-6461902 --file Dockerfile .
-docker compose -f compose.yaml up --detach api
+docker compose -f compose.yaml up --build --detach api
 docker compose -f compose.yaml ps
+curl --fail http://127.0.0.1:5055/health
 ```
 
-The currently running ATLAS-003 container uses image tag `project-atlas-api:0.1.0-atlas003-6461902`; this CI change does not rebuild or restart it. New Dockerfile builds use the official Python 3.14.9 slim Trixie linux/amd64 manifest pinned to digest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. The digest is amd64-specific, so local Compose builds must target `linux/amd64`; use a separately verified manifest for another architecture. The image installs only production requirements and copies the application into `/opt/atlas`. It starts Gunicorn with one synchronous worker, disables Gunicorn's optional control socket, runs as UID/GID `10001`, and has a Python standard-library health check for `/health`.
+Compose's image value `project-atlas-api:0.1.0-atlas003-6461902` is a local tag paired with the Dockerfile build context; it does not identify a source commit. `--build` ensures the image is built from the current checkout. The Dockerfile pins the official Python 3.14.9 slim Trixie base image by digest `sha256:0214bda9af2652a418f2bf34373a4d3ca00a5f4784081e040049433ac9cc79d5`. CI separately targets `linux/amd64`; the repository does not document validation for other build targets. The image installs only production requirements and copies the application into `/opt/atlas`. It starts Gunicorn with one synchronous worker, disables Gunicorn's optional control socket, runs as UID/GID `10001`, and has a Python standard-library health check for `/health`.
 
 The Compose service limits the container to one CPU and 256 MiB, makes the root filesystem read-only, drops Linux capabilities, disables privilege escalation, and provides a small writable `/tmp`. Its logs are size-limited. No registry, cloud service, database, or other container is required.
 
