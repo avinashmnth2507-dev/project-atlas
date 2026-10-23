@@ -12,6 +12,7 @@ from atlas.api import (
 )
 from atlas.config import Config
 from atlas.logging_config import configure_logging
+from atlas.metrics import init_metrics
 
 
 def create_app():
@@ -29,5 +30,6 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(info_bp)
     app.register_blueprint(version_bp)
+    init_metrics(app)
 
     return app

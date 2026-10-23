@@ -43,8 +43,32 @@ The app defaults to the `development` environment. `DEBUG` is enabled only for `
 | GET | `/health` | Health status, application name, and version. |
 | GET | `/info` | Application name, version, and configured environment. |
 | GET | `/version` | Application version. |
+| GET | `/metrics` | Prometheus-compatible HTTP request metrics. |
 
-All endpoints return JSON. The version is `0.1.0`, sourced from the package version in `pyproject.toml` through the application configuration.
+The four application API endpoints return JSON. The version is `0.1.0`, sourced from the package version in `pyproject.toml` through the application configuration.
+
+## Prometheus metrics
+
+`GET /metrics` exposes `atlas_http_requests_total` and
+`atlas_http_request_duration_seconds` in Prometheus text format on the existing
+application port `5000`. The request counter and latency histogram use only
+`method`, `route`, and `status` labels. Methods outside the common HTTP
+allowlist are recorded as `OTHER`; routes use Flask's matched route template,
+and unknown routes use the constant `unmatched`. Raw paths and query strings
+are never used as labels. Requests to `/metrics` are excluded from both
+instruments. Health-check requests are included.
+
+The endpoint has no authentication. Keep it within trusted internal access
+boundaries: Compose binds the host port to loopback, and the Kubernetes Service
+is ClusterIP. Do not expose `/metrics` through a public ingress without adding
+an explicit access restriction.
+
+Metrics use an independent in-memory registry for each Flask application
+instance. The container currently runs one synchronous Gunicorn worker, so
+process-local metrics are complete. Increasing the worker count requires
+designing and configuring Prometheus client multiprocess mode, including its
+writable metrics directory and worker lifecycle cleanup; multiprocess mode is
+not enabled here.
 
 ## Run tests and compilation checks
 
