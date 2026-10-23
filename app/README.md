@@ -70,6 +70,31 @@ designing and configuring Prometheus client multiprocess mode, including its
 writable metrics directory and worker lifecycle cleanup; multiprocess mode is
 not enabled here.
 
+## Structured request logs
+
+Application requests produce one JSON `http.request.completed` event with a UTC
+ISO 8601 timestamp, severity, server-generated request ID, normalized HTTP
+method, matched route template (or `unmatched`), final status code, and elapsed
+milliseconds. The response includes the same ID in `X-Request-ID`; incoming
+`X-Request-ID` values are ignored. Successful `/health` and `/metrics` requests
+are omitted to reduce probe and scrape noise, while errors for those endpoints
+are logged. Other 4xx responses use INFO and 5xx responses use ERROR.
+
+Logs do not include raw paths, query strings, request or response bodies,
+headers, cookies, credentials, or exception messages and tracebacks. An
+unexpected production exception returns a generic 500 response and records its
+exception class with the request event. Development debug mode continues to
+propagate exceptions for interactive debugging. Request IDs are for log
+correlation only and are not Prometheus labels.
+
+The standard-library JSON handler writes application events to stderr. The
+container keeps Gunicorn error logging enabled and disables Gunicorn access logs
+so request lines do not create duplicate events or expose query strings. Docker
+and Compose capture stdout and stderr, with Compose's existing log rotation.
+The current deployment runs one synchronous Gunicorn worker; logs are emitted
+per request by the Flask process, and no centralized log collector or durable
+log store is configured.
+
 ## Run tests and compilation checks
 
 From `app/`, with the environment active:
@@ -79,7 +104,10 @@ python -m pytest
 python -m compileall -q src run.py
 ```
 
-The pytest suite uses Flask's test client and does not start a web server. It covers endpoint responses, JSON content, package-version consistency, the application factory, and development/production debug settings.
+The pytest suite uses Flask's test client and does not start a web server. It
+covers endpoint responses, JSON content, package-version consistency, request
+logging and privacy, the application factory, and development/production debug
+settings.
 
 ## Troubleshooting
 
