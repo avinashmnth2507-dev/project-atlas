@@ -1,0 +1,13 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/avinashmnth2507-dev/project-atlas
+  digest: sha256:b4c9a18d1e5d89e964da70a123e8fb9cf84777d15a8f12d8850323db44fb031b
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 96Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi
