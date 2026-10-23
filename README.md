@@ -231,9 +231,6 @@ Linux capabilities, disables privilege escalation, and limits PIDs, CPU,
 memory, and log-file size. The application image exposes port 5000; Compose
 publishes it only on host loopback at port 5055.
 
-The repository's `LICENSE` is still a placeholder, so no license is asserted
-here.
-
 ## Kubernetes and Helm
 
 Kustomize and Helm render the same `atlas-api` Deployment and ClusterIP
@@ -373,7 +370,7 @@ Minikube deployment.
 | Minikube | A local smoke test was completed historically with an older image; current profile state is not asserted |
 | Terraform and AWS | AWS provider foundation only; no resources, backend, or deployed AWS environment |
 | Prometheus, Grafana, centralized logs | Not deployed |
-| License | Placeholder file; licensing terms not established |
+| License | MIT for original Project Atlas code; third-party licenses still apply |
 
 The project roadmap records milestones ATLAS-001 through ATLAS-010 and
 proposed follow-on work in the [architecture roadmap](docs/architecture/07-roadmap.md).
@@ -388,6 +385,11 @@ currently running service.
 - [Kubernetes manifests and historical smoke-test notes](kubernetes/README.md)
 - [Helm chart values and ownership prerequisites](helm/atlas/README.md)
 - [Architecture chapters and milestone roadmap](docs/architecture/07-roadmap.md)
+
+## License
+
+The original Project Atlas code is available under the [MIT License](LICENSE),
+subject to applicable third-party licenses.
 
 ## Author
 
